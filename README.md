@@ -107,6 +107,67 @@ To use local LLM, comment out `OPENAI_KEY` and instead uncomment `OPENAI_ENDPOIN
 - Set `OPENAI_ENDPOINT` to the address of your local server (eg."http://localhost:1234/v1")
 - Set `OPENAI_MODEL` to the name of the model loaded in your local server.
 
+## Deploying the MAAS-Compatible Fork on Another Windows Machine
+
+This fork can run against a MAAS-provided OpenAI-compatible endpoint on another Windows machine without changing the default upstream behavior for other users.
+
+### Requirements
+
+The target machine must have:
+
+- Git
+- Node.js 22 installed via `fnm`
+- Tailscale installed and logged into the correct tailnet
+- Tailscale DNS / MagicDNS enabled so the internal `.ts.net` MAAS endpoint resolves
+
+### Clone the fork and switch to the compatibility branch
+
+```powershell
+git clone https://github.com/Gumb-D/deep-research.git
+Set-Location deep-research
+git checkout maas-compat
+```
+
+### Install the pinned Node version and dependencies
+
+```powershell
+fnm install 22
+fnm use 22
+npm ci
+```
+
+The repository includes a `.node-version` file to pin the expected Node runtime for this fork.
+
+### Configure the environment
+
+```powershell
+Copy-Item .env.example .env.local
+```
+
+Then update `.env.local` with your approved MAAS endpoint and API key. Do not commit `.env.local`, API keys, or any other secrets to source control.
+
+Add this required setting:
+
+```env
+MAAS_PROMPT_JSON="true"
+```
+
+### Why MAAS mode is required
+
+Some MAAS/OpenAI-compatible gateways do not enforce native `response_format: json_schema`. This fork adds a compatibility mode that uses prompt-constrained JSON, local validation, and bounded retries for the intermediate structured steps.
+
+Default upstream behavior remains unchanged unless `MAAS_PROMPT_JSON="true"` is explicitly enabled.
+
+### First run
+
+For the first verification run, start with breadth `1` and depth `1`. Confirm the research-plan stage completes successfully before running broader or deeper research jobs.
+
+### Tailscale troubleshooting
+
+If you see `ENOTFOUND <host>.ts.net`, Tailscale is usually disconnected, the machine is joined to the wrong tailnet, or Tailscale DNS / MagicDNS is disabled.
+
+Keep this README public-safe: do not add internal endpoint hostnames, API keys, or other user-specific credentials.
+
 ### Docker
 
 1. Clone the repository
@@ -174,20 +235,6 @@ There are 2 other optional env vars that lets you tweak the endpoint (for other 
 OPENAI_ENDPOINT="custom_endpoint"
 CUSTOM_MODEL="custom_model"
 ```
-
-### MAAS prompt-JSON compatibility mode
-
-Some OpenAI-compatible gateways ignore `response_format: { type: "json_schema" }`. If that is your setup, you can opt into prompt-enforced JSON validation for the intermediate structured steps:
-
-```bash
-MAAS_PROMPT_JSON="true"
-# Optional overrides:
-# MAAS_JSON_MAX_TOKENS="4096"
-# MAAS_REPORT_MAX_TOKENS="16000"
-# MAAS_JSON_RETRIES="2"
-```
-
-When this mode is enabled, follow-up question generation and intermediate research planning use prompt-enforced JSON plus local Zod validation/retries. Final report and final answer generation switch to plain text generation with `finishReason === "stop"` enforcement.
 
 ## How It Works
 

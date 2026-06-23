@@ -109,7 +109,7 @@ To use local LLM, comment out `OPENAI_KEY` and instead uncomment `OPENAI_ENDPOIN
 
 ## Deploying the MAAS-Compatible Fork on Another Windows Machine
 
-This fork can run against a MAAS-provided OpenAI-compatible endpoint on another Windows machine without changing the default upstream behavior for other users.
+This fork can run against a MAAS-provided OpenAI-compatible endpoint on another Windows machine without changing the default upstream behavior for other users. The fork's default `main` branch already includes the MAAS prompt-JSON compatibility path, so standard deployment does not require selecting a branch. The `maas-compat` branch is retained only as a rollback/reference branch.
 
 ### Requirements
 
@@ -120,12 +120,11 @@ The target machine must have:
 - Tailscale installed and logged into the correct tailnet
 - Tailscale DNS / MagicDNS enabled so the internal `.ts.net` MAAS endpoint resolves
 
-### Clone the fork and switch to the compatibility branch
+### Clone the fork
 
 ```powershell
 git clone https://github.com/Gumb-D/deep-research.git
 Set-Location deep-research
-git checkout maas-compat
 ```
 
 ### Install the pinned Node version and dependencies
@@ -157,6 +156,15 @@ MAAS_PROMPT_JSON="true"
 Some MAAS/OpenAI-compatible gateways do not enforce native `response_format: json_schema`. This fork adds a compatibility mode that uses prompt-constrained JSON, local validation, and bounded retries for the intermediate structured steps.
 
 Default upstream behavior remains unchanged unless `MAAS_PROMPT_JSON="true"` is explicitly enabled.
+
+### Updating an existing deployment
+
+Use the default branch for routine updates:
+
+```powershell
+git pull origin main
+npm ci
+```
 
 ### What this fork fixes
 

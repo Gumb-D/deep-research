@@ -175,6 +175,20 @@ OPENAI_ENDPOINT="custom_endpoint"
 CUSTOM_MODEL="custom_model"
 ```
 
+### MAAS prompt-JSON compatibility mode
+
+Some OpenAI-compatible gateways ignore `response_format: { type: "json_schema" }`. If that is your setup, you can opt into prompt-enforced JSON validation for the intermediate structured steps:
+
+```bash
+MAAS_PROMPT_JSON="true"
+# Optional overrides:
+# MAAS_JSON_MAX_TOKENS="4096"
+# MAAS_REPORT_MAX_TOKENS="16000"
+# MAAS_JSON_RETRIES="2"
+```
+
+When this mode is enabled, follow-up question generation and intermediate research planning use prompt-enforced JSON plus local Zod validation/retries. Final report and final answer generation switch to plain text generation with `finishReason === "stop"` enforcement.
+
 ## How It Works
 
 1. **Initial Setup**

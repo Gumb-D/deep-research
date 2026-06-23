@@ -158,13 +158,71 @@ Some MAAS/OpenAI-compatible gateways do not enforce native `response_format: jso
 
 Default upstream behavior remains unchanged unless `MAAS_PROMPT_JSON="true"` is explicitly enabled.
 
+### What this fork fixes
+
+#### Private MAAS endpoint connectivity
+
+A private MAAS endpoint exposed through Tailscale can fail with:
+
+```text
+ENOTFOUND <host>.ts.net
+```
+
+Usual causes are Tailscale not being connected, the machine being logged into the wrong tailnet, or Tailscale DNS / MagicDNS being disabled.
+
+Required checks:
+
+- Tailscale is installed and logged in
+- the machine belongs to the correct tailnet
+- the `.ts.net` hostname resolves
+- the MAAS endpoint is reachable over HTTPS/TCP 443
+
+Do not place real internal hostnames, tailnet names, IP addresses, or credentials in public documentation.
+
+#### Structured-output compatibility
+
+The upstream project uses native OpenAI JSON Schema structured output through `generateObject()`. Some OpenAI-compatible MAAS gateways do not enforce or correctly forward `response_format: json_schema`.
+
+Typical symptoms include:
+
+```text
+NoObjectGeneratedError
+JSON parsing failed
+```
+
+When `MAAS_PROMPT_JSON="true"` is enabled, this fork uses the compatibility path:
+
+```text
+generateText()
+→ explicit prompt JSON contract
+→ JSON parse
+→ Zod validation
+→ finish reason validation
+→ bounded retry
+```
+
+Upstream/native behavior remains unchanged unless `MAAS_PROMPT_JSON="true"` is set.
+
+#### What has been verified
+
+- Tailscale connectivity and MAAS authentication
+- prompt-constrained JSON output
+- research-plan generation reaching interactive follow-up questions
+- formatting, TypeScript validation, and MAAS compatibility tests
+
+You should still run your own first end-to-end research test, because endpoint capabilities and routing can differ across deployments.
+
+#### Model routing note
+
+An OpenAI-compatible gateway can return a model identifier that differs from the requested alias. For production usage, verify requested model versus returned model, routing rules, cost attribution, and output-quality expectations with the MAAS owner.
+
 ### First run
 
-For the first verification run, start with breadth `1` and depth `1`. Confirm the research-plan stage completes successfully before running broader or deeper research jobs.
+For the first verification run, start with breadth `1` and depth `1`. Confirm the research-plan and follow-up-question stage works before increasing breadth or depth. Do not run broad research automatically during setup, because it can consume search and model quota.
 
 ### Tailscale troubleshooting
 
-If you see `ENOTFOUND <host>.ts.net`, Tailscale is usually disconnected, the machine is joined to the wrong tailnet, or Tailscale DNS / MagicDNS is disabled.
+If you see `ENOTFOUND <host>.ts.net`, Tailscale is usually disconnected, the machine is joined to the wrong tailnet, or Tailscale DNS / MagicDNS is disabled. Check Tailscale login state, correct tailnet membership, DNS resolution, and HTTPS/TCP 443 reachability to the MAAS endpoint.
 
 Keep this README public-safe: do not add internal endpoint hostnames, API keys, or other user-specific credentials.
 
